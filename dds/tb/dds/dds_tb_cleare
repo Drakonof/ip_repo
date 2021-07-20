@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rm transcript modelsim.ini *vsim.wlf -r work
