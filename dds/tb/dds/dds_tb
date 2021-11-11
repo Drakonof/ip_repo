@@ -1,7 +1,0 @@
-#!/bin/bash
-
-#change the vivado_path to yours if required.
-modelsim_path=/opt/modelsim/modelsim_ase/bin
-tb_tcl_file_name=dds_tb.tcl
-
-$modelsim_path/vsim -do $tb_tcl_file_name
