@@ -1,5 +1,2 @@
-ip_repo.cache/
-ip_repo.hw/
-ip_repo.ip_user_files/
-ip_repo.sim/
-*.xpr
+hardware/*
+!hardware/uart_tx_1.0/
