@@ -1,4 +1,4 @@
-`include "platform.vh"
+//`include "platform.vh"
 
 `timescale 1 ns / 1 ps
 
@@ -38,9 +38,10 @@ module axi_rom_ctrl #
   output logic                                s_axi_rvalid, 
   input  logic                                s_axi_rready,
   
-  output logic                                rom_addr_o,
-  input  logic                                rom_data_i
+  output logic [AXI_ADDR_WIDTH - 1 : 0]       rom_addr_o,
+  input  logic [AXI_DATA_WIDTH - 1 : 0]       rom_data_i
 );
+
   logic  	                     axi_arready;
   logic  	                     axi_rvalid;
   logic [AXI_ADDR_WIDTH - 1 : 0] axi_araddr;
@@ -70,8 +71,7 @@ module axi_rom_ctrl #
     
   always_comb
     begin
-      slv_reg_rden    = axi_arready & s_axi_arvalid & ~axi_rvalid;
-      read_ready      = axi_arready && s_axi_arvalid && ~axi_rvalid;
+      read_ready      = ~axi_arready && ~s_axi_arvalid && ~axi_rvalid;
       read_valid      = axi_rvalid && s_axi_rready;
       addr_read_ready = ~axi_arready && s_axi_arvalid;
     end
@@ -103,12 +103,14 @@ module axi_rom_ctrl #
         begin
           axi_rvalid <= 0;
           axi_rresp  <= 0;
+          axi_rdata <= '0;
         end 
       else
         begin    
           if (read_ready == 1'h1)
             begin
               axi_rvalid <= 'h1;
+              axi_rdata  <= rom_data_i;
               axi_rresp  <= '0;
             end   
           else if (read_valid == 1'h1)
@@ -116,21 +118,14 @@ module axi_rom_ctrl #
               axi_rvalid <= 'h0;
             end                
         end
-    end    
+    end
+    
 
-  always_ff @(posedge axi_clk)
-    begin
-      if (axi_s_rst_n == 1'h0)
-        begin
-          axi_rdata <= '0;
-        end 
-      else
-        begin    
-          if (slv_reg_rden)
-            begin
-              axi_rdata <= rom_data_i;
-            end   
-        end
-    end    
+`ifndef XILINX
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(1, axi_rom_ctrl);
+  end
+`endif
   
 endmodule
