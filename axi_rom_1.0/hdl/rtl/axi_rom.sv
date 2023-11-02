@@ -10,7 +10,7 @@ module axi_rom #
 `ifdef XILINX 
   parameter          RAM_TYPE    = "block", // "distributed", "block"
 `endif
-  parameter          INIT_FILE      = "/home/artem/workspace/H/ip_repo/axi_rom_1.0/hdl/tb/rom_tb/rom_init.mem",
+  parameter          INIT_FILE      = "",
   
   localparam unsigned AXI_PROT_WIDTH = 3,
   localparam unsigned AXI_RESP_WIDTH = 2
