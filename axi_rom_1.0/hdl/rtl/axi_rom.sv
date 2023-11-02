@@ -1,4 +1,4 @@
-`include "platform.vh"
+//`include "platform.vh"
 
 `timescale 1 ns / 1 ps
 
@@ -10,7 +10,7 @@ module axi_rom #
 `ifdef XILINX 
   parameter          RAM_TYPE    = "block", // "distributed", "block"
 `endif
-  parameter          INIT_FILE      = "",
+  parameter          INIT_FILE      = "/home/artem/workspace/H/ip_repo/axi_rom_1.0/hdl/tb/rom_tb/rom_init.mem",
   
   localparam unsigned AXI_PROT_WIDTH = 3,
   localparam unsigned AXI_RESP_WIDTH = 2
@@ -103,5 +103,12 @@ module axi_rom #
   
     .data_o (rom_data)
   );
+
+`ifndef XILINX
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(1, axi_rom);
+  end
+`endif
 
 endmodule
