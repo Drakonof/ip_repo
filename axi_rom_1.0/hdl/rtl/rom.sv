@@ -50,11 +50,13 @@ module rom #
       data_o = data;
     end
 
+
 `ifndef XILINX
   initial begin
     $dumpfile("dump.vcd");
     $dumpvars(1, rom);
   end
 `endif
+
 
 endmodule
