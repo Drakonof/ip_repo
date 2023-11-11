@@ -34,8 +34,10 @@ module axis_udp_gen #
 
 
   logic en;
-  
-  udp_gen_inf data_inf;
+  logic [AXIS_DATA_WIDTH - 1 : 0] data;     
+  logic data_valid;
+  logic frame_end;
+  //udp_gen_inf data_inf();
 
 
   axis_udp_gen_ctrl # 
@@ -51,7 +53,10 @@ module axis_udp_gen #
   	.m_axis_tready (m_axis_tready),
   	
   	.en_o          (en           ),
-  	.data_inf      (data_inf     )
+  	//.data_inf      (data_inf     )
+  	.data_i        (data     ),   
+    .data_valid_i  (data_valid),
+    .frame_end_i   (frame_end)
   	
   );
   
@@ -75,7 +80,11 @@ module axis_udp_gen #
     .src_udp_port_i       (src_udp_port ),
     .dst_udp_port_i       (dst_udp_port ),
     
-    .udp_gen_inf          (data_inf     )
+    //.udp_gen_inf          (data_inf     )
+    
+    .data_o        (data     ),   
+    .data_valid_o  (data_valid),
+    .frame_end_o   (frame_end)
   );
  
   

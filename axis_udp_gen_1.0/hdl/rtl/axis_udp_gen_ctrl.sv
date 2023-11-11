@@ -12,15 +12,18 @@ module axis_udp_gen_ctrl #
   input  logic                                 m_axis_tready,
   
   output logic                                 en_o,
-  udp_gen_inf                                  data_inf
+ // udp_gen_inf                                  data_inf
+ input logic [AXIS_DATA_WIDTH - 1 : 0]  data_i    , 
+ input logic data_valid_i,
+ input logic frame_end_i
 );
 
   always_comb
     begin
-      m_axis_tvalid = data_inf.data_valid;
-      m_axis_tdata  = data_inf.data;
-      m_axis_tstrb  = '1;
-      m_axis_tlast  = data_inf.frame_end;
+      m_axis_tvalid = data_valid_i;
+      m_axis_tdata  = data_i;
+      m_axis_tstrb  = 8'hff;
+      m_axis_tlast  = frame_end_i;
       en_o          = m_axis_tready;
     end
 
