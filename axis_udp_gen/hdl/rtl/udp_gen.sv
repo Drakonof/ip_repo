@@ -12,119 +12,109 @@
 //(* dont_touch = "yes" *)
 module udp_gen #
 (
-  localparam unsigned DATA_WIDTH = 64,
-  
-  localparam unsigned MAC_ADDR_WIDTH = 48,
-  parameter [MAC_ADDR_WIDTH - 1 : 0] MAC_ADDR = 48'h1A1B1C1D1E1F,
-  
-  localparam unsigned LT_WIDTH = 16,
-  parameter [LT_WIDTH - 1 : 0] LT = 16'h1800, //?? without size
-  
-  localparam unsigned IPV4_ADDR_WIDTH = 32,
-  localparam unsigned UDP_PORT_WIDTH = 16
+  parameter unsigned DATA_WIDTH = 64,
+  parameter unsigned ADDR_WIDTH = 4
 )
 (
-  input  logic                           clk_i,
-  input  logic                           s_rst_n_i,
+  input  logic                      clk_i,
+  input  logic                      s_rst_n_i,
   
-  input  logic                           en_i,
+  input  logic                      en_i,
   
+  output logic [DATA_WIDTH - 1 : 0] data_o,    
+  output logic                      data_valid_o,
+  output logic                      frame_end_o,
 
-  input  logic [MAC_ADDR_WIDTH - 1 : 0]  dst_mac_addr_i,
-  
-  input  logic [IPV4_ADDR_WIDTH - 1 : 0] src_ipv4_addr_i, //format???
-  input  logic [IPV4_ADDR_WIDTH - 1 : 0] dst_ipv4_addr_i,
-
-  input  logic [UDP_PORT_WIDTH - 1 : 0] src_udp_port_i, // format???
-  input  logic [UDP_PORT_WIDTH - 1 : 0] dst_udp_port_i,
-  
-  output logic [DATA_WIDTH - 1 : 0]  data_o,    
-  output logic data_valid_o,
-  output logic frame_end_o
+  input  logic [DATA_WIDTH - 1 : 0] mem_data_i,
+  input  logic [ADDR_WIDTH - 1 : 0] mem_addr_o,
+  input  logic                      mem_rd_en_o
   
  // udp_gen_inf data_inf
 );
- 
-  localparam unsigned                MIN_DATA_SIZE   = 64;   // 46 bytes payload
-  localparam unsigned                MAX_DATA_SIZE   = 1518; // 1500 bytes payload
+
+  localparam [DATA_WIDTH - 1 : 0] BYTE_COUNTER_INCR   = DATA_WIDTH / 8;
+
+  localparam [DATA_WIDTH - 1 : 0] MIN_DATA_SIZE       = 64;   // 46 bytes payload
+  localparam [DATA_WIDTH - 1 : 0] MAX_DATA_SIZE       = 1518; // 1500 bytes payload  //todo:size???
   
-  localparam unsigned                FMS_STATE_NR    = 8;
-  localparam unsigned                FMS_STATE_WIDTH = $clog2(FMS_STATE_NR);
-  
-  localparam unsigned                COUNTER_WIDTH    = 16;
-  localparam [COUNTER_WIDTH - 1 : 0] COUNTER_MAX_VAL = 16'h50; // 'h50
-  
-  //todo:
-  localparam unsigned                GAP_COUNTER_VAL = 12;
-  localparam unsigned                GAP_COUNTER_MAX_VAL = 'd12;
-  localparam unsigned                GAP_COUNTER_WIDTH = $clog2(GAP_COUNTER_MAX_VAL);
-  
+  localparam unsigned                     FMS_STATE_NR        = 6;
+  localparam unsigned                     FMS_STATE_WIDTH     = $clog2(FMS_STATE_NR);
+    
+  localparam unsigned                     GAP_COUNTER_MAX_VAL = 'd12;
+  localparam unsigned                     GAP_COUNTER_WIDTH   = $clog2(GAP_COUNTER_MAX_VAL);
+
+
   
   
   typedef enum logic [FMS_STATE_WIDTH - 1 : 0] {
     IDLE_STATE,
-    MAC_1_STATE,
-    MAC_2_STATE,
-    IP_1_STATE,
-    IP_2_STATE,
-    UDP_1_STATE,
-    DATA_1_STATE,
-    DATA_2_STATE
+    SIZE_STATE,
+    DATA_STATE,
+    PAD_NULL_STATE,
+    LAST_DATA_STATE,
+    GAP_STATE
   } fsm_state_t;
 
   
   fsm_state_t fsm_state;
   fsm_state_t next_fsm_state;
   
-  logic [MAC_ADDR_WIDTH - 1 : 0]  dst_mac_addr;
-  
-  logic [IPV4_ADDR_WIDTH - 1 : 0] src_ipv4_addr;
-  logic [IPV4_ADDR_WIDTH - 1 : 0] dst_ipv4_addr;
-  
-  logic [UDP_PORT_WIDTH - 1 : 0]  src_udp_port;
-  logic [UDP_PORT_WIDTH - 1 : 0]  dst_udp_port;
-  
-  logic [COUNTER_WIDTH - 1 : 0]   counter;
+  logic [DATA_WIDTH - 1 : 0] byte_counter;
+  logic [ADDR_WIDTH - 1 : 0] mem_addr;
+  logic [DATA_WIDTH - 1 : 0] frame_size;
 
-  always_ff @(posedge clk_i)
-    begin
-      if (s_rst_n_i == 1'h0)
-        begin
-          dst_mac_addr  <= '0;
-          
-          src_ipv4_addr <= '0;
-          dst_ipv4_addr <= '0;
-          
-          src_udp_port  <= '0;
-          dst_udp_port  <= '0;
-        end
-      else if ((en_i == 'h1) && (fsm_state == IDLE_STATE))
-        begin
-          dst_mac_addr <= dst_mac_addr_i;
-          
-          src_ipv4_addr <= src_ipv4_addr_i;
-          dst_ipv4_addr <= dst_ipv4_addr_i;
-          
-          src_udp_port  <= src_udp_port_i;
-          dst_udp_port  <= dst_udp_port_i;
-        end
-    end
+  logic [GAP_COUNTER_WIDTH - 1 : 0] gap_counter;
     
   always_ff @(posedge clk_i)
     begin
       if (s_rst_n_i == 1'h0)
         begin
-          counter <= '0;
+          byte_counter <= '0;
         end
-      else if (fsm_state == DATA_1_STATE)
+      else if (fsm_state == DATA_STATE)
         begin
-          counter <= counter + 1'h1;
+          byte_counter <= byte_counter + BYTE_COUNTER_INCR;
         end
       else
         begin
-          counter <= '0;
+          byte_counter <= '0;
         end
     end
+
+  always_ff @(posedge clk_i)
+    begin
+      if (s_rst_n_i == 1'h0)
+        begin
+          mem_addr   <= '0;
+          frame_size <= '0;
+        end
+      else if (fsm_state == SIZE_STATE)
+        begin
+          mem_addr   <= '0;
+          frame_size <= mem_data_i;
+        end
+      else if (en_i == 'h1)
+        begin
+          mem_addr <= mem_addr + 1'h1;
+        end
+    end
+
+  always_ff @(posedge clk_i)
+    begin
+      if (s_rst_n_i == 1'h0)
+        begin
+          gap_counter <= '0;
+        end
+      else if (fsm_state == GAP_STATE)
+        begin
+          gap_counter <= gap_counter + 1'h1;
+        end
+      else if (fsm_state == SIZE_STATE)
+        begin
+          gap_counter <= '0;
+        end
+    end
+
   
   // 1
   always_ff @(posedge clk_i)
@@ -133,7 +123,7 @@ module udp_gen #
         begin
           fsm_state <= IDLE_STATE;
         end
-      else if (en_i == 'h1)
+      else
         begin
           fsm_state <= next_fsm_state;
         end
@@ -150,46 +140,39 @@ module udp_gen #
         begin
           if (en_i == 'h1)
             begin
-              next_fsm_state = MAC_1_STATE;
+              next_fsm_state = SIZE_STATE;
             end
         end
-        
-      MAC_1_STATE:
+
+      SIZE_STATE:
         begin
-          next_fsm_state = MAC_2_STATE;
-        end
-        
-      MAC_2_STATE:
-        begin
-          next_fsm_state = IP_1_STATE;
-        end
-        
-      IP_1_STATE:
-        begin
-          next_fsm_state = IP_2_STATE;
-        end
-        
-      IP_2_STATE:
-        begin
-          next_fsm_state = UDP_1_STATE;
-        end
-      
-      UDP_1_STATE:
-        begin
-          next_fsm_state = DATA_1_STATE;
-        end
-        
-      DATA_1_STATE:
-        begin
-          if (counter == (COUNTER_MAX_VAL - 1))
+          if (en_i == 'h1) 
             begin
-              next_fsm_state = DATA_2_STATE;
+              next_fsm_state = DATA_STATE;
             end
         end
         
-      DATA_2_STATE:
+      DATA_STATE:
         begin
-          if (counter == COUNTER_MAX_VAL)
+          if ((en_i == 'h1) && (byte_counter == frame_size - 2'h2))
+            begin
+              next_fsm_state = LAST_DATA_STATE;
+            end
+        end
+
+      //todo: pad_null_state
+       
+      LAST_DATA_STATE:
+        begin
+          if (en_i == 'h1)
+            begin
+              next_fsm_state = GAP_STATE;
+            end
+        end
+        
+      GAP_STATE:
+        begin
+          if (gap_counter == (GAP_COUNTER_MAX_VAL - 1'h1))
             begin
               next_fsm_state = IDLE_STATE;
             end
@@ -197,7 +180,7 @@ module udp_gen #
         
       default:
         begin
-          next_fsm_state = fsm_state;
+          next_fsm_state = IDLE_STATE;
         end
       
       endcase
@@ -214,62 +197,46 @@ module udp_gen #
           frame_end_o  = '0;
 
           data_o       = '0;
+
+          if (en_i == 'h1)
+            begin
+              mem_addr_o  = mem_addr;
+              mem_rd_en_o = 'h1;
+            end
         end
-        
-      MAC_1_STATE:
+
+      SIZE_STATE:
         begin
           data_valid_o = 'h1;
           frame_end_o  = '0;
           
-          data_o       = {dst_mac_addr, MAC_ADDR[15 : 0]}; // signal racing?
+          mem_addr_o   = mem_addr;
+          mem_rd_en_o  = 'h1;
         end
         
-      MAC_2_STATE:
+      DATA_STATE:
         begin
           data_valid_o = 'h1;
           frame_end_o  = '0;
           
-          data_o       = {MAC_ADDR[47 : 16], LT, 16'haaaa}; //todo: ip Vertion, IHL, DSCP, ECN
+          mem_addr_o   = mem_addr;
+          mem_rd_en_o  = 'h1;
+          data_o       = mem_data_i;
         end
         
-      IP_1_STATE:
+      LAST_DATA_STATE:
         begin
           data_valid_o = 'h1;
           frame_end_o  = '0;
           
-          data_o  = {16'hbbbb, 16'hcccc, 16'hdddd, 8'hee, 8'hff}; //todo: ip total lenght, identification, flag + fragment offset, time to live, protocol
+          mem_rd_en_o  = 'h1;
+          data_o       = mem_data_i;
         end
         
-      IP_2_STATE:
+      GAP_STATE:
         begin
-          data_valid_o = 'h1;
+          data_valid_o = '0;
           frame_end_o  = '0;
-          
-          data_o  = {16'h1111, src_ipv4_addr, dst_ipv4_addr[15 : 0]}; //todo: header checksum, src ip, dst ip [15:0]
-        end
-        
-      UDP_1_STATE:
-        begin
-          data_valid_o = 'h1;
-          frame_end_o  = '0;
-          
-          data_o       = {dst_ipv4_addr[31 : 16], src_udp_port, dst_udp_port, COUNTER_MAX_VAL}; //todo: dst ip [31:16], src port, dst port lengh !! 16'h8 + COUNTER_MAX_VAL
-        end
-        
-      DATA_1_STATE:
-        begin
-          data_valid_o = 'h1;
-          frame_end_o  = '0;
-          
-          data_o  = {48'h0, counter}; //  !'0
-        end
-        
-      DATA_2_STATE:
-        begin
-          data_valid_o = 'h1;
-          frame_end_o  = 'h1;
-          
-          data_o       = {48'h0, counter}; //  !'0
         end
         
       default:
