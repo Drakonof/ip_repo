@@ -1,31 +1,3 @@
-/*
-simple_dual_port_ram #
-(
-  .DATA_WIDTH     (), // default: 8
-  .ADDR_WIDTH     (), // default: 8
-
-  .IS_OUT_LATENCY (), // default: "false", cases: "true", "false"
-                    
-  .RAM_TYPE       (), // default: "block", cases: "distributed", "block"
-  .INIT_FILE_NAME ()  // default: ""
-)
-simple_dual_port_ram_inst
-(
-  .wr_clk_i        (),
-    
-  .wr_en_i         (),
-  .wr_data_i       (), // width: DATA_WIDTH
-  .wr_byte_valid_i (), // width: BYTE_VALID_WIDTH width
-  .wr_addr_i       (), // width: ADDR_WIDTH
-
-  .rd_clk_i        (),
-
-  .rd_en_i         (),
-  .rd_data_o       (), // width: DATA_WIDTH
-  .rd_addr_i       ()  // width: DATA_WIDTH
-);
-*/
-
 `timescale 1ns / 1ps
 
 module simple_dual_port_ram #
