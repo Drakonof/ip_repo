@@ -4,22 +4,13 @@ module axis_udp_gen #
 (
   parameter unsigned                 AXIS_DATA_WIDTH = 64,
 
-  parameter unsigned                 AXI_DATA_WIDTH = 32,
-  parameter unsigned                 AXI_ADDR_WIDTH = 4,
+  localparam unsigned AXI_DATA_WIDTH = AXIS_DATA_WIDTH,
+  parameter unsigned                 AXI_ADDR_WIDTH  = 4,
 
-  localparam unsigned AXI_PROT_WIDTH  = 3,
-  localparam unsigned AXI_RESP_WIDTH  = 2
-  
-  localparam unsigned MAC_ADDR_WIDTH  = 48,
-  parameter [MAC_ADDR_WIDTH - 1 : 0] MAC_ADDR        = 48'h1A1B1C1D1E1F,
-  
-  localparam unsigned LT_WIDTH        = 16,
-  parameter [LT_WIDTH - 1 : 0]       LT              = 16'h0800,
-  
-  localparam unsigned IPV4_ADDR_WIDTH = 32,
-  localparam unsigned UDP_PORT_WIDTH  = 16,
+  localparam unsigned AXI_PROT_WIDTH = 3,
+  localparam unsigned AXI_RESP_WIDTH = 2
 
-  parameter           INIT_FILE       = ""
+  parameter                          INIT_FILE       = ""
 )
 (
   // axis
@@ -59,15 +50,6 @@ module axis_udp_gen #
   output logic [AXI_RESP_WIDTH - 1 : 0]        s_axi_rresp,
   output logic                                 s_axi_rvalid,
   input  logic                                 s_axi_rready
-	
-  // network
-  // input  logic [MAC_ADDR_WIDTH - 1 : 0]        dst_mac_addr,
-  
-  // input  logic [IPV4_ADDR_WIDTH - 1 : 0]       src_ipv4_addr,
-  // input  logic [IPV4_ADDR_WIDTH - 1 : 0]       dst_ipv4_addr,
-
-  // input  logic [UDP_PORT_WIDTH - 1 : 0]        src_udp_port,
-  // input  logic [UDP_PORT_WIDTH - 1 : 0]        dst_udp_port
 );
 
 
@@ -103,35 +85,25 @@ module axis_udp_gen #
   );
   
   udp_gen #
-  (
-    .MAC_ADDR (MAC_ADDR),
-    .LT       (LT      ),
-    .MEM_ADDR_WIDTH (AXI_ADDR_WIDTH)
+  ( .DATA_WIDTH (AXI_DATA_WIDTH),
+    .ADDR_WIDTH (AXI_ADDR_WIDTH),
+
+    .MAC_ADDR   (MAC_ADDR      )
   )
   udp_gen_inst_0
   (
-    .clk_i                (axis_clk     ),
-    .s_rst_n_i            (axis_s_rst_n ),
+    .clk_i          (axis_clk    ),
+    .s_rst_n_i      (axis_s_rst_n),
   
-    .en_i                 (en           ),
-  
-    // .dst_mac_addr_i       (dst_mac_addr ),
-  
-    // .src_ipv4_addr_i      (src_ipv4_addr),
-    // .dst_ipv4_addr_i      (dst_ipv4_addr),
-  
-    // .src_udp_port_i       (src_udp_port ),
-    // .dst_udp_port_i       (dst_udp_port ),
+    .en_i           (en          )
     
-    //.udp_gen_inf          (data_inf     )
-    
-    .data_o        (data     ),   
-    .data_valid_o  (data_valid),
-    .frame_end_o   (frame_end),
+    .data_o         (data        ),   
+    .data_valid_o   (data_valid  ),
+    .frame_end_o    (frame_end   ),
 
-    .mem_data_i        (mem_data),
-    .mem_addr_o        (mem_addr),
-    .mem_rd_en_o     (mem_rd_en)
+    .mem_data_i     (mem_data    ),
+    .mem_addr_o     (mem_addr    ),
+    .mem_rd_en_o    (mem_rd_en   )
 
   );
 
@@ -175,11 +147,9 @@ module axis_udp_gen #
     .bram_byte_valid_o (bram_byte_valid)
   );
 
-
   simple_dual_port_ram #
   (
-    .WR_DATA_WIDTH (AXI_DATA_WIDTH),
-    .RD_DATA_WIDTH (AXIS_DATA_WIDTH),
+    .DATA_WIDTH (AXI_DATA_WIDTH),
     .ADDR_WIDTH (AXI_ADDR_WIDTH),
 
 `ifdef XILINX
