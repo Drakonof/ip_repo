@@ -1,3 +1,5 @@
+//todo: axi mem, rewrite fsm
+
 //`include "platform.vh"
 
 //`resetall
