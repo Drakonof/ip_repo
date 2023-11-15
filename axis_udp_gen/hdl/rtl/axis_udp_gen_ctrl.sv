@@ -22,7 +22,7 @@ module axis_udp_gen_ctrl #
     begin
       m_axis_tvalid = data_valid_i;
       m_axis_tdata  = data_i;
-      m_axis_tstrb  = 8'hff;
+      m_axis_tstrb  = 8'hff; //todo:
       m_axis_tlast  = frame_end_i;
       en_o          = m_axis_tready;
     end
