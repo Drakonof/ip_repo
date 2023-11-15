@@ -12,10 +12,10 @@ MODULE=udp_gen_tb
 
 VERILOG_SOURCES+=$(DUT).sv
 VERILOG_SOURCES+=$(SRC_DIR)/udp_gen.sv
-VERILOG_SOURCES+=$(SRC_DIR)/udp_gen_inf.sv
+#VERILOG_SOURCES+=$(SRC_DIR)/udp_gen_inf.sv
 
 EXTRA_ARGS += --trace --trace-structs
-#EXTRA_ARGS += -GMAC_ADDR=16
+EXTRA_ARGS += -GADDR_WIDTH=8
 
 GFLAGS=-S gtkwave.tcl
 
