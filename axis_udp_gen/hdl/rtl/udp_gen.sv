@@ -1,4 +1,4 @@
-//todo: axi mem, rewrite fsm
+//todo: pad_null_state
 
 //`include "platform.vh"
 
@@ -13,7 +13,7 @@
 module udp_gen #
 (
   parameter unsigned DATA_WIDTH = 64,
-  parameter unsigned ADDR_WIDTH = 4
+  parameter unsigned ADDR_WIDTH = 8
 )
 (
   input  logic                      clk_i,
@@ -26,31 +26,21 @@ module udp_gen #
   output logic                      frame_end_o,
 
   input  logic [DATA_WIDTH - 1 : 0] mem_data_i,
-  input  logic [ADDR_WIDTH - 1 : 0] mem_addr_o,
-  input  logic                      mem_rd_en_o
+  output logic [ADDR_WIDTH - 1 : 0] mem_addr_o
   
  // udp_gen_inf data_inf
-);
-
-  localparam [DATA_WIDTH - 1 : 0] BYTE_COUNTER_INCR   = DATA_WIDTH / 8;
-
-  localparam [DATA_WIDTH - 1 : 0] MIN_DATA_SIZE       = 64;   // 46 bytes payload
-  localparam [DATA_WIDTH - 1 : 0] MAX_DATA_SIZE       = 1518; // 1500 bytes payload  //todo:size???
-  
-  localparam unsigned                     FMS_STATE_NR        = 6;
+); 
+  localparam unsigned                     FMS_STATE_NR        = 5;
   localparam unsigned                     FMS_STATE_WIDTH     = $clog2(FMS_STATE_NR);
     
   localparam unsigned                     GAP_COUNTER_MAX_VAL = 'd12;
   localparam unsigned                     GAP_COUNTER_WIDTH   = $clog2(GAP_COUNTER_MAX_VAL);
 
 
-  
-  
   typedef enum logic [FMS_STATE_WIDTH - 1 : 0] {
     IDLE_STATE,
     SIZE_STATE,
     DATA_STATE,
-    PAD_NULL_STATE,
     LAST_DATA_STATE,
     GAP_STATE
   } fsm_state_t;
@@ -59,57 +49,51 @@ module udp_gen #
   fsm_state_t fsm_state;
   fsm_state_t next_fsm_state;
   
-  logic [DATA_WIDTH - 1 : 0] byte_counter;
   logic [ADDR_WIDTH - 1 : 0] mem_addr;
-  logic [DATA_WIDTH - 1 : 0] frame_size;
+  logic [ADDR_WIDTH - 1 : 0] frame_size;
 
   logic [GAP_COUNTER_WIDTH - 1 : 0] gap_counter;
-    
+
+
   always_ff @(posedge clk_i)
     begin
-      if (s_rst_n_i == 1'h0)
+      if (s_rst_n_i == '0)
         begin
-          byte_counter <= '0;
+          frame_size <= '0;
         end
-      else if (fsm_state == DATA_STATE)
+      else if ((fsm_state == IDLE_STATE) && (en_i == 'h1))
         begin
-          byte_counter <= byte_counter + BYTE_COUNTER_INCR;
-        end
-      else
-        begin
-          byte_counter <= '0;
+          frame_size <= mem_data_i[ADDR_WIDTH - 1 : 0];
         end
     end
 
   always_ff @(posedge clk_i)
     begin
-      if (s_rst_n_i == 1'h0)
+      if (s_rst_n_i == '0)
         begin
-          mem_addr   <= '0;
-          frame_size <= '0;
+          mem_addr <= '0;
         end
-      else if (fsm_state == SIZE_STATE)
+      else if (gap_counter == (GAP_COUNTER_MAX_VAL - 'h2)) // 2? waiting pre end of gap
         begin
-          mem_addr   <= '0;
-          frame_size <= mem_data_i;
+          mem_addr <= '0;
         end
       else if (en_i == 'h1)
         begin
-          mem_addr <= mem_addr + 1'h1;
+          mem_addr <= mem_addr + 'h1;
         end
     end
 
   always_ff @(posedge clk_i)
     begin
-      if (s_rst_n_i == 1'h0)
+      if (s_rst_n_i == '0)
         begin
           gap_counter <= '0;
         end
       else if (fsm_state == GAP_STATE)
         begin
-          gap_counter <= gap_counter + 1'h1;
+          gap_counter <= gap_counter + 'h1;
         end
-      else if (fsm_state == SIZE_STATE)
+      else if (fsm_state == IDLE_STATE)
         begin
           gap_counter <= '0;
         end
@@ -119,7 +103,7 @@ module udp_gen #
   // 1
   always_ff @(posedge clk_i)
     begin
-      if (s_rst_n_i == 1'h0)
+      if (s_rst_n_i == '0)
         begin
           fsm_state <= IDLE_STATE;
         end
@@ -146,7 +130,7 @@ module udp_gen #
 
       SIZE_STATE:
         begin
-          if (en_i == 'h1) 
+          if (en_i == 'h1)
             begin
               next_fsm_state = DATA_STATE;
             end
@@ -154,14 +138,12 @@ module udp_gen #
         
       DATA_STATE:
         begin
-          if ((en_i == 'h1) && (byte_counter == frame_size - 2'h2))
+          if ((en_i == 'h1) && (mem_addr == frame_size))
             begin
               next_fsm_state = LAST_DATA_STATE;
             end
         end
 
-      //todo: pad_null_state
-       
       LAST_DATA_STATE:
         begin
           if (en_i == 'h1)
@@ -172,9 +154,16 @@ module udp_gen #
         
       GAP_STATE:
         begin
-          if (gap_counter == (GAP_COUNTER_MAX_VAL - 1'h1))
+          if (gap_counter == (GAP_COUNTER_MAX_VAL - 'h1))
             begin
-              next_fsm_state = IDLE_STATE;
+              if (en_i == 'h1)
+                begin
+                  next_fsm_state = SIZE_STATE;
+                end
+              else
+                begin
+                  next_fsm_state = IDLE_STATE;
+                end
             end
         end
         
@@ -197,21 +186,21 @@ module udp_gen #
           frame_end_o  = '0;
 
           data_o       = '0;
+          mem_addr_o   = '0;
 
           if (en_i == 'h1)
             begin
               mem_addr_o  = mem_addr;
-              mem_rd_en_o = 'h1;
             end
         end
 
       SIZE_STATE:
         begin
-          data_valid_o = 'h1;
+          data_valid_o = '0;
           frame_end_o  = '0;
           
           mem_addr_o   = mem_addr;
-          mem_rd_en_o  = 'h1;
+          data_o       = '0;
         end
         
       DATA_STATE:
@@ -220,16 +209,15 @@ module udp_gen #
           frame_end_o  = '0;
           
           mem_addr_o   = mem_addr;
-          mem_rd_en_o  = 'h1;
           data_o       = mem_data_i;
         end
         
       LAST_DATA_STATE:
         begin
           data_valid_o = 'h1;
-          frame_end_o  = '0;
+          frame_end_o  = 'h1;
           
-          mem_rd_en_o  = 'h1;
+          mem_addr_o   = '0;
           data_o       = mem_data_i;
         end
         
@@ -237,12 +225,18 @@ module udp_gen #
         begin
           data_valid_o = '0;
           frame_end_o  = '0;
+
+          mem_addr_o   = '0;
+          data_o       = '0;
         end
         
       default:
         begin
           data_valid_o = '0;
           frame_end_o  = '0;
+
+          mem_addr_o   = '0;
+          data_o       = '0;
         end
         
       endcase
