@@ -2,55 +2,40 @@
 
 module udp_gen_tb_wrapper #
 (
-  localparam unsigned DATA_WIDTH = 64,
-  
-  localparam unsigned MAC_ADDR_WIDTH = 48,
-  parameter [MAC_ADDR_WIDTH - 1 : 0] MAC_ADDR = 48'h1A1B1C1D1E1F,
-  
-  localparam unsigned LT_WIDTH = 16,
-  parameter [LT_WIDTH - 1 : 0] LT = 16'h0800,
-  
-  localparam unsigned IPV4_ADDR_WIDTH = 32,
-  localparam unsigned UDP_PORT_WIDTH = 16
+  parameter unsigned DATA_WIDTH = 64,
+  parameter unsigned ADDR_WIDTH = 8
 );
-  logic                           clk;
-  logic                           s_rst_n;
+  logic                      clk;
+  logic                      s_rst_n;
   
-  logic                           en;
+  logic                      en;
 
-  logic [MAC_ADDR_WIDTH - 1 : 0]  dst_mac_addr;
-  
-  logic [IPV4_ADDR_WIDTH - 1 : 0] src_ipv4_addr;
-  logic [IPV4_ADDR_WIDTH - 1 : 0] dst_ipv4_addr;
+  logic [DATA_WIDTH - 1 : 0] data;
+  logic                      data_valid;
+  logic                      frame_end;
 
-  logic [UDP_PORT_WIDTH - 1 : 0]  src_udp_port;
-  logic [UDP_PORT_WIDTH - 1 : 0]  dst_udp_port;
+  logic [DATA_WIDTH - 1 : 0] mem_data;
+  logic [ADDR_WIDTH - 1 : 0] mem_addr;
 
-  udp_gen_inf data_inf();
+  //udp_gen_inf data_inf();
 
   udp_gen #
-  (
-    .MAC_ADDR (MAC_ADDR),
-  
-    .LT       (LT      )
+  ( .DATA_WIDTH (DATA_WIDTH),
+    .ADDR_WIDTH (ADDR_WIDTH)
   )
   udp_gen_dut
   (
-    .clk_i           (clk          ),
-    .s_rst_n_i       (s_rst_n      ),
+    .clk_i          (clk    ),
+    .s_rst_n_i      (s_rst_n),
   
-    .en_i            (en           ),
-  
+    .en_i           (en          ),
+    
+    .data_o         (data        ),   
+    .data_valid_o   (data_valid  ),
+    .frame_end_o    (frame_end   ),
 
-    .dst_mac_addr_i  (dst_mac_addr ),
- 
-    .src_ipv4_addr_i (src_ipv4_addr),
-    .dst_ipv4_addr_i (dst_ipv4_addr),
-
-    .src_udp_port_i  (src_udp_port ),
-    .dst_udp_port_i  (dst_udp_port ),
-  
-    .data_inf        (data_inf       )
+    .mem_data_i     (mem_data    ),
+    .mem_addr_o     (mem_addr    )
   );
 
   initial begin
