@@ -89,13 +89,13 @@ module udp_gen #
         begin
           gap_counter <= '0;
         end
+      else if (gap_counter == (GAP_COUNTER_MAX_VAL - 'h1))
+        begin
+          gap_counter <= '0;
+        end
       else if (fsm_state == GAP_STATE)
         begin
           gap_counter <= gap_counter + 'h1;
-        end
-      else if (fsm_state == IDLE_STATE)
-        begin
-          gap_counter <= '0;
         end
     end
 
