@@ -15,7 +15,7 @@ def create_init_mem_file():
     0x192168001234abcd
     ]
 
-    for i in range(100):
+    for i in range(10):
         init_array.append(i)
 
     init_array.insert(0, len(init_array))
