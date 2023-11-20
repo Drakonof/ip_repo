@@ -39,8 +39,9 @@ async def main(dut):
     cocotb.log.info("Start of simulation")
 
     tb = Tb(dut)
+    await tb.clk_tick()
     await tb.reset()
-    await tb.send_frame(3)
+    await tb.send_frame(2)
 
     cocotb.log.info("End of simulation")
         
