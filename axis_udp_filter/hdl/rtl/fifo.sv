@@ -10,18 +10,18 @@
 `endif
 
 
-module async_fifo #
+module fifo #
 (
-  parameter unsigned DATA_WIDTH   = 32,
+  parameter unsigned             DATA_WIDTH   = 32,
 
-  parameter unsigned ADDR_WIDTH   = 8,
-
-  parameter unsigned ALMOST_FULL  = 2,
-  parameter unsigned ALMOST_EMPTY = 2,
+  parameter unsigned             ADDR_WIDTH   = 8,
 
 `ifdef XILINX
-  parameter          RAM_STYLE    = "auto" // "distributed", "block", "registers", "ultra", "mixed", "auto"
+  parameter                      RAM_STYLE    = "auto", // "distributed", "block", "registers", "ultra", "mixed", "auto"
 `endif
+
+  parameter unsigned ALMOST_FULL  = 2,
+  parameter unsigned ALMOST_EMPTY = 2
 )
 (
   input  logic                      clk_i,
@@ -44,14 +44,14 @@ module async_fifo #
 
   initial
     begin
-    if ((ALMOST_FULL > FIFO_DEPTH) || (ALMOST_FULL < 1))
+    if ((ALMOST_FULL > FIFO_DEPTH) || (ALMOST_FULL < 'h1))
       begin
-          $error("Incorrect parameter value: ALMOST_FULL");    
+          $error("Incorrect parameter value: ALMOST_FULL == %h, FIFO_DEPTH == %h", ALMOST_FULL, FIFO_DEPTH);    
       end 
 
-    if ((ALMOST_EMPTY > FIFO_DEPTH) || (ALMOST_EMPTY < 1))
+    if ((ALMOST_EMPTY > FIFO_DEPTH) || (ALMOST_EMPTY < 'h1))
       begin
-        $error("Incorrect parameter value: ALMOST_EMPTY_VALUE");
+        $error("Incorrect parameter value: ALMOST_EMPTY == %dh, FIFO_DEPTH == %h", ALMOST_EMPTY, FIFO_DEPTH);
       end
 
     if (ADDR_WIDTH == 0)
@@ -65,8 +65,8 @@ module async_fifo #
       end
   end
 
-  localparam unsigned A_FULL     = FIFO_DEPTH - ALMOST_FULL;
-  localparam unsigned A_EMPTY    = ALMOST_EMPTY;
+  localparam [ADDR_WIDTH : 0]  A_FULL     = FIFO_DEPTH - ALMOST_FULL;
+  localparam [ADDR_WIDTH : 0]  A_EMPTY    = ALMOST_EMPTY;
 
   logic [ADDR_WIDTH : 0]     wr_pointer; // one bit extra
   logic [ADDR_WIDTH : 0]     rd_pointer; // one bit extra
@@ -106,7 +106,6 @@ module async_fifo #
       if (s_rst_n_i == 'h0)	
         begin
           wr_pointer      <= '0;
-          wr_gray_pointer <= '0;
         end
       else if ((wr_en_i == 'h1) && (full != 'h1))
       	begin
