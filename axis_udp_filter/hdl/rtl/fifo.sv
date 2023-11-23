@@ -1,5 +1,7 @@
 //`include "platform.vh"
 
+//todo: strobes
+
 
 `timescale 1 ns / 1 ps
 
@@ -77,6 +79,12 @@ module fifo #
   logic                      full;
   logic                      empty;
 
+  logic                      almost_full;
+  logic                      almost_full_d;
+
+  logic                      almost_empty;
+  logic                      almost_empty_d;
+
 `ifdef XILINX
   (*ram_style = RAM_STYLE*)
 `endif
@@ -93,12 +101,40 @@ module fifo #
     begin
       full           = (wr_pointer != rd_pointer) && (wr_addr == rd_addr);
       full_o         = full;
-      almost_full_o  = (wr_pointer - rd_pointer) >= A_FULL;
+      almost_full    = (wr_pointer - rd_pointer) >= A_FULL;
+
+      almost_full_o  = almost_full && ~almost_full_d;
 
 
       empty          = (wr_pointer == rd_pointer) && (wr_addr == rd_addr);
       empty_o        = empty;
-      almost_empty_o = (wr_pointer - rd_pointer) <= A_EMPTY;
+      almost_empty   = (wr_pointer - rd_pointer) <= A_EMPTY;
+
+      almost_empty_o = almost_empty && ~almost_empty_d;
+    end
+
+  always_ff @(posedge clk_i)
+    begin
+      if (s_rst_n_i == '0)
+        begin
+          almost_full_d <= '0;
+        end
+      else
+        begin
+          almost_full_d <= almost_full;
+        end
+    end
+
+  always_ff @(posedge clk_i)
+    begin
+      if (s_rst_n_i == '0)
+        begin
+          almost_empty_d <= '0;
+        end
+      else
+        begin
+          almost_empty_d <= almost_empty;
+        end
     end
 
   always_ff @(posedge clk_i)
