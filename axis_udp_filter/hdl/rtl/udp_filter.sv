@@ -145,7 +145,7 @@ module udp_filter #
           if (en_i == 'h1)
             begin
               if ((frame_i[31 : 16] == ETHERTYPE) &&
-                  (frame_i[15 : 11] == VERSION))
+                  (frame_i[15 : 12] == VERSION))
                 begin
                   next_fsm_state = PROTOCOL_STATE;
                 end
@@ -223,7 +223,7 @@ module udp_filter #
 
       FIFO_FINISH_STATE:
         begin
-          if (fifo_empty_i = 'h1)
+          if (fifo_empty_i == 'h1)
             begin
               next_fsm_state = IDLE_STATE;
             end
