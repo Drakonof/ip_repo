@@ -11,14 +11,14 @@
 
 module axis_udp_filter #
 (
-  parameter unsigned AXIS_DATA_WIDTH = 64,
-
+  
 `ifdef XILINX
    parameter         RAM_STYLE       = "auto", // "distributed", "block", "registers", "ultra", "mixed", "auto"
 `endif
 
   parameter unsigned MAX_FRAME_SIZE  = 1518,
 
+  localparam unsigned AXIS_DATA_WIDTH = 64,
   localparam unsigned IPV4_ADDR_WIDTH = 32
 )
 (
@@ -48,10 +48,9 @@ module axis_udp_filter #
   localparam unsigned ALMOST_EMPTY    = 2;
 
   logic                           fifo_rst_n;
-  logic                           fifo_sys_rst_n;
   logic                           wr_en;
   logic [AXIS_DATA_WIDTH - 1 : 0] data_to_fifo;
- // todo: logic                           full;
+  logic                           full;
 
   logic                           rd_en;
   logic [AXIS_DATA_WIDTH - 1 : 0] data_from_fifo;
@@ -59,12 +58,42 @@ module axis_udp_filter #
   logic                           empty;
   
   logic                           filter_en;
-  logic [AXIS_DATA_WIDTH - 1 : 0] frame;
+  logic [AXIS_DATA_WIDTH - 1 : 0] frame_data;
   logic                           frame_last;
   logic                           frame_valid;
 
 
-  fifo #
+  axis_udp_filter_if #
+  (
+    .AXIS_DATA_WIDTH (AXIS_DATA_WIDTH)
+  )
+  (
+    .m_axis_tvalid     (m_axis_tvalid ),
+    .m_axis_tdata      (m_axis_tdata  ),
+    .m_axis_tstrb      (m_axis_tstrb  ),
+    .m_axis_tlast      (m_axis_tlast  ),
+    .m_axis_tready     (m_axis_tready ),
+  
+    .s_axis_tvalid     (s_axis_tvalid ),
+    .s_axis_tdata      (s_axis_tdata  ),
+    .s_axis_tstrb      (s_axis_tstrb  ),
+    .s_axis_tlast      (s_axis_tlast  ),
+    .s_axis_tready     (s_axis_tready ),
+
+    .en_i              (en            ),
+ 
+    .fifo_full_i       (full          ),
+    .rd_en_o           (rd_en         ),
+    .data_from_fifo_i  (data_from_fifo),
+    .almost_empty_i    (almost_empty  ),
+
+    .filter_en_o       (filter_en     ),
+    .frame_o           (frame_data    ),
+    .frame_last_o      (frame_last    ),
+    .frame_valid_i     (frame_valid   )
+  );
+
+  smart_fifo #
   (
     .DATA_WIDTH   (AXIS_DATA_WIDTH),
 
@@ -77,16 +106,18 @@ module axis_udp_filter #
     .ALMOST_FULL  (ALMOST_FULL    ),
     .ALMOST_EMPTY (ALMOST_EMPTY   )
   )
-  fifo_inst
+  smart_fifo_inst
   (
     .clk_i          (axis_clk      ),
   
-    .s_rst_n_i      (fifo_sys_rst_n),
+    .s_rst_n_0_i    (axis_s_rst_n  ),
+
+    .s_rst_n_1_i    (fifo_rst_n    ),
 
     .wr_en_i        (wr_en         ),
     .data_i         (data_to_fifo  ),
     .almost_full_o  (),
-    .full_o         (),
+    .full_o         (full          ),
 
     .rd_en_i        (rd_en         ),
     .data_o         (data_from_fifo),
