@@ -31,7 +31,7 @@ def create_init_mem_file():
     for i in range(int(args.count)):
         init_array.append(i)
 
-    init_array.insert(0, len(init_array) * 8)
+    init_array.insert(0, hex(len(init_array)))
     
     file = open(init_file_name, 'w')
     for value in init_array:
