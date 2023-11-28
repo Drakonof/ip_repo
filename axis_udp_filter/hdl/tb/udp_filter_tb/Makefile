@@ -14,7 +14,6 @@ VERILOG_SOURCES+=$(DUT).sv
 VERILOG_SOURCES+=$(SRC_DIR)/udp_filter.sv
 
 EXTRA_ARGS += --trace --trace-structs
-EXTRA_ARGS += -GDATA_WIDTH=64
 
 #GFLAGS=-S gtkwave.tcl
 
