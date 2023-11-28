@@ -82,7 +82,7 @@ module udp_filter #
         begin
           ipv4_addr <= '0;
         end
-      else if ((fsm_state == IDLE_STATE) && (en_i == 'h1))
+      else if (fsm_state == IDLE_STATE)
         begin
           ipv4_addr <= ipv4_addr_i;
         end
