@@ -2,7 +2,7 @@
 
 module udp_filter_tb_wrapper #
 (
-  parameter unsigned DATA_WIDTH = 64,
+  localparam unsigned DATA_WIDTH = 64,
 
   localparam unsigned IPV4_ADDR_WIDTH = 32
 );
@@ -27,10 +27,7 @@ module udp_filter_tb_wrapper #
   logic                           fifo_rst_n;
 
 
-  udp_filter #
-  ( 
-    .DATA_WIDTH   (DATA_WIDTH)
-  )
+  udp_filter
   udp_filter_dut
   (
     .clk_i         (clk        ),
