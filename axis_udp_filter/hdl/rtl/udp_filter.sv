@@ -59,7 +59,7 @@ module udp_filter #
     ETHERTYPE_VERSION_STATE,
     PROTOCOL_STATE,
     DEST_IPV4_1_STATE,
-   // DEST_IPV4_2_STATE,
+    DEST_IPV4_2_STATE,
     WRONG_FRAME_STATE,
     LAST_STATE,
     FIFO_FINISH_STATE
@@ -144,7 +144,7 @@ module udp_filter #
         begin
           if (en_i == 'h1)
             begin
-              if ((frame_i[51 : 48] == VERSION) &&
+              if ((frame_i[55 : 52] == VERSION) &&
                   (frame_i[47 : 32] == ETHERTYPE))
                 begin
                   next_fsm_state = PROTOCOL_STATE;
@@ -175,7 +175,7 @@ module udp_filter #
         begin
           if (en_i == 'h1)
             begin
-              if (frame_i[31 : 0] == ipv4_addr)
+              if (frame_i[47 : 16] == ipv4_addr)
                 begin
                   next_fsm_state = LAST_STATE;
                 end
@@ -190,7 +190,7 @@ module udp_filter #
       //   begin
       //     if (en_i == 'h1)
       //       begin
-      //         if (frame_i[31 : 16] == ipv4_addr[31 : 16])
+      //         if (frame_i[15 : 0] == ipv4_addr[15 : 0])
       //           begin
       //             next_fsm_state = LAST_STATE;
       //           end
@@ -283,13 +283,13 @@ module udp_filter #
           frame_valid_o = '0;
         end
 
-      // DEST_IPV4_2_STATE:
-      //   begin
-      //     fifo_wr_en_o  = 'h1;
-      //     fifo_data_o   = frame_i;
-      //     fifo_rst_n_o  = 'h1;
-      //     frame_valid_o = '0;
-      //   end
+      DEST_IPV4_2_STATE:
+        begin
+          fifo_wr_en_o  = 'h1;
+          fifo_data_o   = frame_i;
+          fifo_rst_n_o  = 'h1;
+          frame_valid_o = '0;
+        end
 
       WRONG_FRAME_STATE:
         begin
