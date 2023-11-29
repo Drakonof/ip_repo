@@ -9,20 +9,25 @@ def create_init_mem_file():
     parser.add_argument('--ethertype', type=str, default='0800', help='ethertype')
     parser.add_argument('--vertion', type=str, default='4', help='vertion')
     parser.add_argument('--protocol', type=str, default='11', help='protocol')
-    parser.add_argument('--ipv4_des_addr', type=str, default='19216801', help='ipv4_des_addr')
-    parser.add_argument('--ipv4_src_addr', type=str, default='19216800', help='ipv4_src_addr')
+    parser.add_argument('--ipv4_des_addr', type=str, default='C0A80001', help='ipv4_des_addr')
+    parser.add_argument('--ipv4_src_addr', type=str, default='C0A80000', help='ipv4_src_addr')
     parser.add_argument('--count', type=str, default='10', help='count')
 
     args = parser.parse_args()
 
     init_file_name = args.file_name
 
+    dst_mac = "da0102030405"
+    src_mac = "5a0102030405"
+    ihl = "5"
+    ttl = "40"
+
     init_array = [
-    "0405da0102030405",
-    "999" + args.vertion + args.ethertype + "5a010203",
-    args.protocol + "99999999999999",
-    "55555555" + args.ipv4_des_addr,
-    args.ipv4_src_addr
+    src_mac[8:] + dst_mac,
+    "00" + args.vertion + ihl + args.ethertype + src_mac[:8],
+    args.protocol + ttl +"00000000" + str(hex(int(ihl) + int(args.count)))[2:].zfill(4),
+    args.ipv4_src_addr[4:] + args.ipv4_des_addr + "0000",
+    args.ipv4_src_addr[:4] 
     ]
 
     if os.path.exists(init_file_name):
@@ -32,7 +37,8 @@ def create_init_mem_file():
         init_array.append(i)
 
     init_array.insert(0, hex(len(init_array)))
-    
+
+    #todo:
     file = open(init_file_name, 'w')
     for value in init_array:
         file.write(f'{value}\n')
