@@ -17,13 +17,19 @@ class Tb(object):
         sub_proc = lambda file_name, arg_0, arg_1: subprocess.run(["python3", "./frame_gen.py", "--file_name", file_name, arg_0, arg_1])
 
         self.dut = dut
-        self.ipv4_dst_addr = 0x19216801
+        self.ipv4_dst_addr = 0xC0A80001
 
-        sub_proc(frame_files_arr[1], "--ethertype","0070")
-        sub_proc(frame_files_arr[1], "--vertion","6")
-        sub_proc(frame_files_arr[1], "--protocol", "10")
-        sub_proc(frame_files_arr[1], "--ipv4_des_addr", "19216802")
-        subprocess.run(["python3", "./frame_gen.py", "--file_name", frame_files_arr[5]])
+        sub_proc(frame_files_arr[1], "--ethertype", "0070")
+        sub_proc(frame_files_arr[2], "--vertion", "6")
+        sub_proc(frame_files_arr[3], "--protocol", "10")
+        sub_proc(frame_files_arr[4], "--ipv4_des_addr", "C0A80003")
+
+        # subprocess.run(["python3", "./frame_gen.py", "--file_name", "frame_wrong_ethertype.mem", "--ethertype", "0070"])
+        # subprocess.run(["python3", "./frame_gen.py", "--file_name", "frame_wrong_vertion.mem", "--vertion", "6"])
+        # subprocess.run(["python3", "./frame_gen.py", "--file_name", "frame_wrong_protocol.mem", "--protocol", "10"])
+        # subprocess.run(["python3", "./frame_gen.py", "--file_name", "frame_wrong_ipv4_des_addr.mem", "--ipv4_des_addr", "19216802"])
+        subprocess.run(["python3", "./frame_gen.py", "--file_name", "frame_all_correct.mem"])
+        
         cocotb.start_soon(Clock(self.dut.clk, 10, units="ns").start())
 
     async def clk_tick(self):
