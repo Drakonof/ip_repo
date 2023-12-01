@@ -13,7 +13,7 @@
 
 module udp_filter #
 (
-  parameter unsigned DATA_WIDTH = 64,
+  localparam unsigned DATA_WIDTH = 64,
 
   localparam unsigned IPV4_ADDR_WIDTH = 32
 )
@@ -25,13 +25,15 @@ module udp_filter #
 
   input  logic [IPV4_ADDR_WIDTH - 1 : 0] ipv4_addr_i,
 
-  input  logic [DATA_WIDTH - 1 : 0]      frame_i,
+  input  logic [DATA_WIDTH - 1 : 0]      frame_data_i,
+  input  logic                           frame_data_valid_i,
   input  logic                           frame_last_i,
 
   output logic                           frame_valid_o,
   
   output logic                           fifo_wr_en_o,
   output logic [DATA_WIDTH - 1 : 0]      fifo_data_o,
+  input  logic                           fifo_almost_empty_i,
   input  logic                           fifo_empty_i,
  // todo with fifo error: input  logic fifo_full_i,
   output logic                           fifo_rst_n_o
@@ -54,15 +56,16 @@ module udp_filter #
 
 
   typedef enum logic [FMS_STATE_WIDTH - 1 : 0] {
-    IDLE_STATE,
+    IDLE_STATE, // is that needed?
     MAC_STATE,
     ETHERTYPE_VERSION_STATE,
     PROTOCOL_STATE,
     DEST_IPV4_1_STATE,
-    DEST_IPV4_2_STATE,
+   // DEST_IPV4_2_STATE,
     WRONG_FRAME_STATE,
     LAST_STATE,
-    FIFO_FINISH_STATE
+    FIFO_FINISH_0_STATE,
+    FIFO_FINISH_1_STATE
   } fsm_state_t;
 
   
@@ -134,7 +137,7 @@ module udp_filter #
 
       MAC_STATE:
         begin
-          if (en_i == 'h1)
+          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
               next_fsm_state = ETHERTYPE_VERSION_STATE;
             end
@@ -142,10 +145,10 @@ module udp_filter #
         
       ETHERTYPE_VERSION_STATE:
         begin
-          if (en_i == 'h1)
+          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
-              if ((frame_i[55 : 52] == VERSION) &&
-                  (frame_i[47 : 32] == ETHERTYPE))
+              if ((frame_data_i[55 : 52] == VERSION) &&
+                  (frame_data_i[47 : 32] == ETHERTYPE))
                 begin
                   next_fsm_state = PROTOCOL_STATE;
                 end
@@ -158,9 +161,9 @@ module udp_filter #
 
       PROTOCOL_STATE:
         begin
-          if (en_i == 'h1)
+          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
-              if (frame_i[63 : 56] == PROTOCOL)
+              if (frame_data_i[63 : 56] == PROTOCOL)
                 begin
                   next_fsm_state = DEST_IPV4_1_STATE;
                 end
@@ -173,9 +176,9 @@ module udp_filter #
 
       DEST_IPV4_1_STATE:
         begin
-          if (en_i == 'h1)
+          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
-              if (frame_i[47 : 16] == ipv4_addr)
+              if (frame_data_i[47 : 16] == ipv4_addr)
                 begin
                   next_fsm_state = LAST_STATE;
                 end
@@ -190,7 +193,7 @@ module udp_filter #
       //   begin
       //     if (en_i == 'h1)
       //       begin
-      //         if (frame_i[15 : 0] == ipv4_addr[15 : 0])
+      //         if (frame_data_i[15 : 0] == ipv4_addr[15 : 0])
       //           begin
       //             next_fsm_state = LAST_STATE;
       //           end
@@ -208,7 +211,7 @@ module udp_filter #
 
       LAST_STATE:
         begin
-          if ((en_i == 'h1) && (frame_last_i == 'h1))
+          if ((en_i == 'h1) && (frame_last_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
               if (wrong_frame == 'h1)
                 begin
@@ -216,12 +219,20 @@ module udp_filter #
                 end
               else
                 begin
-                  next_fsm_state = FIFO_FINISH_STATE;
+                  next_fsm_state = FIFO_FINISH_0_STATE;
                 end
             end
         end
 
-      FIFO_FINISH_STATE:
+      FIFO_FINISH_0_STATE:
+        begin
+          if (fifo_almost_empty_i == 'h1)
+            begin
+              next_fsm_state = FIFO_FINISH_1_STATE;
+            end
+        end
+
+      FIFO_FINISH_1_STATE:
         begin
           if (fifo_empty_i == 'h1)
             begin
@@ -253,43 +264,43 @@ module udp_filter #
 
       MAC_STATE:
         begin
-          fifo_wr_en_o  = 'h1;
-          fifo_data_o   = frame_i;
+          fifo_wr_en_o  = frame_data_valid_i;
+          fifo_data_o   = frame_data_i;
           fifo_rst_n_o  = 'h1;
           frame_valid_o = '0;
         end
         
       ETHERTYPE_VERSION_STATE:
         begin
-          fifo_wr_en_o  = 'h1;
-          fifo_data_o   = frame_i;
+          fifo_wr_en_o  = frame_data_valid_i;
+          fifo_data_o   = frame_data_i;
           fifo_rst_n_o  = 'h1;
           frame_valid_o = '0;
         end
 
       PROTOCOL_STATE:
         begin
-          fifo_wr_en_o  = 'h1;
-          fifo_data_o   = frame_i;
+          fifo_wr_en_o  = frame_data_valid_i;
+          fifo_data_o   = frame_data_i;
           fifo_rst_n_o  = 'h1;
           frame_valid_o = '0;
         end
 
       DEST_IPV4_1_STATE:
         begin
-          fifo_wr_en_o  = 'h1;
-          fifo_data_o   = frame_i;
+          fifo_wr_en_o  = frame_data_valid_i;
+          fifo_data_o   = frame_data_i;
           fifo_rst_n_o  = 'h1;
           frame_valid_o = '0;
         end
 
-      DEST_IPV4_2_STATE:
-        begin
-          fifo_wr_en_o  = 'h1;
-          fifo_data_o   = frame_i;
-          fifo_rst_n_o  = 'h1;
-          frame_valid_o = '0;
-        end
+      // DEST_IPV4_2_STATE:
+      //   begin
+      //     fifo_wr_en_o  = frame_data_valid_i;
+      //     fifo_data_o   = frame_data_i;
+      //     fifo_rst_n_o  = 'h1;
+      //     frame_valid_o = '0;
+      //   end
 
       WRONG_FRAME_STATE:
         begin
@@ -311,18 +322,26 @@ module udp_filter #
             end
           else
             begin
-              fifo_wr_en_o  = 'h1;
-              fifo_data_o   = frame_i;
+              fifo_wr_en_o  = frame_data_valid_i;
+              fifo_data_o   = frame_data_i;
               frame_valid_o = 'h1;
             end
         end
 
-      FIFO_FINISH_STATE:
+      FIFO_FINISH_0_STATE:
         begin
           fifo_wr_en_o  = '0;
           fifo_data_o   = '0;
           fifo_rst_n_o  = 'h1;
           frame_valid_o = 'h1;
+        end
+
+      FIFO_FINISH_1_STATE:
+        begin
+          fifo_wr_en_o  = '0;
+          fifo_data_o   = '0;
+          fifo_rst_n_o  = 'h1;
+          frame_valid_o = '0;
         end
 
       default:
