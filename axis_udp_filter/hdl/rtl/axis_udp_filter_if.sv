@@ -35,6 +35,7 @@ module axis_udp_filter_if #
   input  logic                                 almost_empty_i,
 
   output logic                                 filter_en_o,
+  output logic                                 frame_data_valid_o,
   output logic [AXIS_DATA_WIDTH - 1 : 0]       frame_o,
   output logic                                 frame_last_o,
   input  logic                                 frame_valid_i
@@ -42,15 +43,17 @@ module axis_udp_filter_if #
 
   always_comb
     begin
-      m_axis_tvalid    = (frame_valid_i == 'h1) && (m_axis_tready == 'h1);
-      m_axis_tdata     = data_from_fifo_i;
-      rd_en_o          = m_axis_tready;
-      m_axis_tlast     = almost_empty_i;
+      m_axis_tvalid      = (frame_valid_i == 'h1) && (m_axis_tready == 'h1);
+      m_axis_tdata       = data_from_fifo_i;
+      rd_en_o            = m_axis_tready;
+      m_axis_tlast       = (almost_empty_i == 'h1) && (frame_valid_i == 'h1);
+      m_axis_tstrb       = 8'hff;
       
-      filter_en_o      = s_axis_tvalid;
-      frame_o          = s_axis_tdata;
-      frame_last_o     = s_axis_tlast;
-      s_axis_tready    = (en_i == 'h1) && (fifo_full_i != 'h1);
+      filter_en_o        = en_i;
+      frame_data_valid_o = s_axis_tvalid;
+      frame_o            = s_axis_tdata;
+      frame_last_o       = s_axis_tlast;
+      s_axis_tready      = (en_i == 'h1) && (fifo_full_i != 'h1);
     end
 
 
