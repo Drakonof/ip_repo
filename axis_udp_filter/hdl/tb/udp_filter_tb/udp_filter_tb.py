@@ -60,15 +60,19 @@ class Tb(object):
         await RisingEdge(self.dut.clk)
 
         for i in range(1,frame_size):
-            self.dut.frame.value = frame_array[i]
+            self.dut.frame_data_valid.value = 1
+            self.dut.frame_data.value = frame_array[i]
             await RisingEdge(self.dut.clk)
 
-        self.dut.frame.value = frame_array[frame_size]
+        self.dut.frame_data.value = frame_array[frame_size]
         self.dut.frame_last.value = 1
         await RisingEdge(self.dut.clk)
+        self.dut.frame_data_valid.value = 0
         self.dut.en.value = 0
         self.dut.frame_last.value = 0
+        self.dut.fifo_almost_empty.value = 1
         await RisingEdge(self.dut.clk)
+        self.dut.fifo_almost_empty.value = 0
         self.dut.fifo_empty.value = 1
         await RisingEdge(self.dut.clk)
         self.dut.fifo_empty.value = 0
