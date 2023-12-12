@@ -137,7 +137,7 @@ module udp_filter #
 
       MAC_STATE:
         begin
-          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
+          if (frame_data_valid_i == 'h1)
             begin
               next_fsm_state = ETHERTYPE_VERSION_STATE;
             end
@@ -145,7 +145,7 @@ module udp_filter #
         
       ETHERTYPE_VERSION_STATE:
         begin
-          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
+          if (frame_data_valid_i == 'h1)
             begin
               if ((frame_data_i[55 : 52] == VERSION) &&
                   (frame_data_i[47 : 32] == ETHERTYPE))
@@ -161,7 +161,7 @@ module udp_filter #
 
       PROTOCOL_STATE:
         begin
-          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
+          if (frame_data_valid_i == 'h1)
             begin
               if (frame_data_i[63 : 56] == PROTOCOL)
                 begin
@@ -176,7 +176,7 @@ module udp_filter #
 
       DEST_IPV4_1_STATE:
         begin
-          if ((en_i == 'h1) && (frame_data_valid_i == 'h1))
+          if (frame_data_valid_i == 'h1)
             begin
               if (frame_data_i[47 : 16] == ipv4_addr)
                 begin
@@ -211,7 +211,7 @@ module udp_filter #
 
       LAST_STATE:
         begin
-          if ((en_i == 'h1) && (frame_last_i == 'h1) && (frame_data_valid_i == 'h1))
+          if ((frame_last_i == 'h1) && (frame_data_valid_i == 'h1))
             begin
               if (wrong_frame == 'h1)
                 begin
